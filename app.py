@@ -127,15 +127,15 @@ def main():
 
     # Init deadletter exchange/queue
 
-    # channel.exchange_declare(exchange='dlx', exchange_type='direct')
+    channel.exchange_declare(exchange='dlx', exchange_type='direct')
 
-    # channel.queue_declare(queue='dl',
-    #                     arguments={
-    #                             'x-message-ttl': 5000,
-    #                             'x-dead-letter-exchange': 'amq.direct',
-    #                     })
+    channel.queue_declare(queue='dl',
+                        arguments={
+                                'x-message-ttl': 5000,
+                                'x-dead-letter-exchange': 'amq.direct',
+                        })
 
-    # channel.queue_bind(exchange='dlx', queue='dl')
+    channel.queue_bind(exchange='dlx', queue='dl')
 
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
