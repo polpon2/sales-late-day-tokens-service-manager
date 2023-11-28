@@ -61,26 +61,26 @@ def callback_payment(ch, method, properties, body):
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
     print(f" [x] Received {body} from payment")
-    ch.queue_declare(queue='to.update', arguments={
+    ch.queue_declare(queue='to.inventory', arguments={
                           'x-message-ttl' : 1000,
                           'x-dead-letter-exchange' : 'dlx',
                           'x-dead-letter-routing-key' : 'dl'
                           })
 
     ch.basic_publish(exchange='',
-                        routing_key='to.update',
+                        routing_key='to.inventory',
                         body=body)
 
-    print(f" [x] Sent {body} to update")
+    print(f" [x] Sent {body} to inventory")
     return
 
 
-def callback_update(ch, method, properties, body):
+def callback_inventory(ch, method, properties, body):
     body: str = body.decode('utf-8')
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
-    print(f" [x] Received {body} from update")
+    print(f" [x] Received {body} from inventory")
     ch.queue_declare(queue='to.deliver', arguments={
                           'x-message-ttl' : 1000,
                           'x-dead-letter-exchange' : 'dlx',
@@ -99,7 +99,7 @@ def callback_deliver(ch, method, properties, body):
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
-    print(f" [x] Received {body} from update")
+    print(f" [x] Received {body} from inventory")
     request_complete(body)
     print(f" [x] Process {body} completed...")
     return
@@ -116,13 +116,13 @@ def main():
     channel.queue_declare(queue='from.backend')
     channel.queue_declare(queue='from.order')
     channel.queue_declare(queue='from.payment')
-    channel.queue_declare(queue='from.update')
+    channel.queue_declare(queue='from.inventory')
     channel.queue_declare(queue='from.deliver')
 
     channel.basic_consume(queue='from.backend', on_message_callback=callback_backend, auto_ack=True)
     channel.basic_consume(queue='from.order', on_message_callback=callback_order, auto_ack=True)
     channel.basic_consume(queue='from.payment', on_message_callback=callback_payment, auto_ack=True)
-    channel.basic_consume(queue='from.update', on_message_callback=callback_update, auto_ack=True)
+    channel.basic_consume(queue='from.inventory', on_message_callback=callback_inventory, auto_ack=True)
     channel.basic_consume(queue='from.deliver', on_message_callback=callback_deliver, auto_ack=True)
 
     # Init deadletter exchange/queue
