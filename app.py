@@ -16,7 +16,8 @@ def request_complete(file: str):
 
 
 def callback_backend(ch, method, properties, body):
-    body: str = body.decode('utf-8')
+    body_dict: dict = json.loads(body)
+    body_dict["stage"] = 0
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
@@ -29,14 +30,16 @@ def callback_backend(ch, method, properties, body):
 
     ch.basic_publish(exchange='',
                         routing_key='to.order',
-                        body=body)
+                        body=json.dumps(body_dict))
 
-    print(f" [x] Sent {body} to order")
+    print(f" [x] Sent {body_dict} to order")
     return
 
 
 def callback_order(ch, method, properties, body):
-    body: str = body.decode('utf-8')
+    body_dict: dict = json.loads(body)
+    body_dict["stage"] = 1
+    # body: str = body.decode('utf-8')
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
@@ -49,14 +52,16 @@ def callback_order(ch, method, properties, body):
 
     ch.basic_publish(exchange='',
                         routing_key='to.payment',
-                        body=body)
+                        body=json.dumps(body_dict))
 
-    print(f" [x] Sent {body} to payment")
+    print(f" [x] Sent {body_dict} to payment")
     return
 
 
 def callback_payment(ch, method, properties, body):
-    body: str = body.decode('utf-8')
+    body_dict: dict = json.loads(body)
+    body_dict["stage"] = 2
+    # body: str = body.decode('utf-8')
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
@@ -69,14 +74,16 @@ def callback_payment(ch, method, properties, body):
 
     ch.basic_publish(exchange='',
                         routing_key='to.inventory',
-                        body=body)
+                        body=json.dumps(body_dict))
 
-    print(f" [x] Sent {body} to inventory")
+    print(f" [x] Sent {body_dict} to inventory")
     return
 
 
 def callback_inventory(ch, method, properties, body):
-    body: str = body.decode('utf-8')
+    body_dict: dict = json.loads(body)
+    body_dict["stage"] = 3
+    # body: str = body.decode('utf-8')
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
@@ -89,17 +96,25 @@ def callback_inventory(ch, method, properties, body):
 
     ch.basic_publish(exchange='',
                         routing_key='to.deliver',
-                        body=body)
+                        body=json.dumps(body_dict))
 
-    print(f" [x] Sent {body} to deliver")
+    print(f" [x] Sent {body_dict} to deliver")
     return
 
 def callback_deliver(ch, method, properties, body):
-    body: str = body.decode('utf-8')
+    body_dict: dict = json.loads(body)
+    body_dict["stage"] = 4
+    # body: str = body.decode('utf-8')
     # filesplit: List[str] = body.split(".")
     # filename: str = filesplit[-2]
     # extension: str = filesplit[-1]
     print(f" [x] Received {body} from inventory")
+    ch.queue_declare(queue='to.order.complete')
+
+    ch.basic_publish(exchange='',
+                        routing_key='to.order.complete',
+                        body=json.dumps(body_dict))
+
     request_complete(body)
     print(f" [x] Process {body} completed...")
     return
@@ -131,7 +146,6 @@ def main():
 
     channel.queue_declare(queue='dl',
                         arguments={
-                                'x-message-ttl': 5000,
                                 'x-dead-letter-exchange': 'amq.direct',
                         })
 
