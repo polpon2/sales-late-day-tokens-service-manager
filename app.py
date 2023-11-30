@@ -3,16 +3,19 @@ from dotenv import load_dotenv
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.sdk.trace.export import (BatchSpanProcessor,
                                             ConsoleSpanExporter)
+
 load_dotenv()
 
 provider = TracerProvider()
+processor = BatchSpanProcessor(ConsoleSpanExporter())
+provider.add_span_processor(processor)
+
+# Sets the global default tracer provider
 trace.set_tracer_provider(provider)
 
-trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+# Creates a tracer from the global tracer provider
 tracer = trace.get_tracer(__name__)
 
 def request_complete(file: str):
@@ -37,19 +40,12 @@ def callback_backend(ch, method, properties, body):
                           'x-dead-letter-routing-key' : 'dl'
                           })
 
-    carrier = {"traceparent": body['traceparent']}
-    ctx = TraceContextTextMapPropagator.extract(carrier=carrier)
-    with tracer.start_as_current_span("manager-send-to-order", context=ctx):
-        carrier = {}
-        # Write the current context into the carrier.
-        TraceContextTextMapPropagator().inject(carrier)
-        body_dict["traceparent"] = carrier['traceparent'] 
-        ch.basic_publish(exchange='',
-                            routing_key='to.order',
-                            body=json.dumps(body_dict))
+    ch.basic_publish(exchange='',
+                        routing_key='to.order',
+                        body=json.dumps(body_dict))
 
-        print(f" [x] Sent {body_dict} to order")
-        return
+    print(f" [x] Sent {body_dict} to order")
+    return
 
 
 def callback_order(ch, method, properties, body):
