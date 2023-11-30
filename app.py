@@ -1,5 +1,4 @@
-from typing import List
-import pika, sys, os, requests, time, json
+import pika, sys, os, time, json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,9 +17,7 @@ def request_complete(file: str):
 def callback_backend(ch, method, properties, body):
     body_dict: dict = json.loads(body)
     body_dict["stage"] = 0
-    # filesplit: List[str] = body.split(".")
-    # filename: str = filesplit[-2]
-    # extension: str = filesplit[-1]
+
     print(f" [x] Received {body} from backend")
     ch.queue_declare(queue='to.order', arguments={
                           'x-message-ttl' : 1000,
@@ -39,10 +36,7 @@ def callback_backend(ch, method, properties, body):
 def callback_order(ch, method, properties, body):
     body_dict: dict = json.loads(body)
     body_dict["stage"] = 1
-    # body: str = body.decode('utf-8')
-    # filesplit: List[str] = body.split(".")
-    # filename: str = filesplit[-2]
-    # extension: str = filesplit[-1]
+
     print(f" [x] Received {body} from order")
     ch.queue_declare(queue='to.payment', arguments={
                           'x-message-ttl' : 1000,
@@ -61,10 +55,7 @@ def callback_order(ch, method, properties, body):
 def callback_payment(ch, method, properties, body):
     body_dict: dict = json.loads(body)
     body_dict["stage"] = 2
-    # body: str = body.decode('utf-8')
-    # filesplit: List[str] = body.split(".")
-    # filename: str = filesplit[-2]
-    # extension: str = filesplit[-1]
+
     print(f" [x] Received {body} from payment")
     ch.queue_declare(queue='to.inventory', arguments={
                           'x-message-ttl' : 1000,
@@ -83,10 +74,7 @@ def callback_payment(ch, method, properties, body):
 def callback_inventory(ch, method, properties, body):
     body_dict: dict = json.loads(body)
     body_dict["stage"] = 3
-    # body: str = body.decode('utf-8')
-    # filesplit: List[str] = body.split(".")
-    # filename: str = filesplit[-2]
-    # extension: str = filesplit[-1]
+
     print(f" [x] Received {body} from inventory")
     ch.queue_declare(queue='to.deliver', arguments={
                           'x-message-ttl' : 1000,
@@ -104,10 +92,7 @@ def callback_inventory(ch, method, properties, body):
 def callback_deliver(ch, method, properties, body):
     body_dict: dict = json.loads(body)
     body_dict["stage"] = 4
-    # body: str = body.decode('utf-8')
-    # filesplit: List[str] = body.split(".")
-    # filename: str = filesplit[-2]
-    # extension: str = filesplit[-1]
+
     print(f" [x] Received {body} from inventory")
     ch.queue_declare(queue='to.order.complete')
 
